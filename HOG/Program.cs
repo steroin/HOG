@@ -18,7 +18,7 @@ namespace HOG
             sw.Start();
             var hog = new HOG(image, 8, 8, 2, 2);
             double[] d = hog.Describe();
-            foreach (double db in d) Console.Write(db+" ");
+            //foreach (double db in d) Console.Write(db+" ");
 
             using (var writer = new StreamWriter(@"C: \Users\Sergiusz\Desktop\test1.txt"))
             {

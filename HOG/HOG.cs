@@ -81,37 +81,41 @@ namespace HOG
             double[] ret = null;
             int imgWidth = Image.Width;
             int imgHeight = Image.Height;
-            int[,] magnitudes = new int[imgWidth, imgHeight];
-            int[,] directions = new int[imgWidth, imgHeight];
+            int[,] magnitudes = new int[imgHeight, imgWidth];
+            int[,] directions = new int[imgHeight, imgWidth];
 
-            for(int i = 0; i < imgWidth; i++)
+            Console.WriteLine("Directions: ");
+            for (int i = 0; i < imgHeight; i++)
             {
-                for(int j = 0; j < imgHeight; j++)
+                for (int j = 0; j < imgWidth; j++)
                 {
-                    var pixelUp = j - 1 < 0 ? Color.Black : Image.GetPixel(i, j-1);
-                    var pixelRight = i + 1 >= imgWidth ? Color.Black : Image.GetPixel(i + 1, j);
-                    var pixelDown = j + 1 >= imgHeight ? Color.Black : Image.GetPixel(i, j + 1);
-                    var pixelLeft = i - 1 < 0 ? Color.Black : Image.GetPixel(i - 1, j);
+                
+                    var pixelLeft = j - 1 < 0 ? Color.Black : Image.GetPixel(j-1, i);
+                    var pixelUp = i + 1 >= imgHeight ? Color.Black : Image.GetPixel(j, i+1);
+                    var pixelRight = j + 1 >= imgWidth ? Color.Black : Image.GetPixel(j+1, i);
+                    var pixelDown = i - 1 < 0 ? Color.Black : Image.GetPixel(j, i-1);
 
-                    int maxGradX = Math.Max(Math.Abs(pixelRight.R-pixelLeft.R), Math.Abs(pixelRight.G - pixelLeft.G));
-                    maxGradX = Math.Max(maxGradX, Math.Abs(pixelRight.B - pixelLeft.B));
-                    int maxGradY = Math.Max(Math.Abs(pixelDown.R - pixelUp.R), Math.Abs(pixelDown.G - pixelUp.G));
-                    maxGradX = Math.Max(maxGradX, Math.Abs(pixelDown.B - pixelUp.B));
+                    int maxGradX = GetMaximalGradient(pixelLeft, pixelRight);
+                    int maxGradY = GetMaximalGradient(pixelUp, pixelDown);
 
                     magnitudes[i, j] = (int) Math.Sqrt(maxGradX*maxGradX+maxGradY*maxGradY);
-                    directions[i, j] = (int) Math.Atan2(maxGradY, maxGradX);
+                    //directions[i, j] = (int) (maxGradX == 0 ? 90 : Math.Atan(maxGradY/maxGradX)*180.0/Math.PI);
+                    directions[i, j] = (int)((Math.Atan2(maxGradY, maxGradX) * 180.0 / Math.PI)+180)%180;
+                    //if (directions[i, j] < 0) directions[i, j] += 180;
+                    Console.Write(directions[i, j]+" ");
                 }
+                Console.WriteLine();
             }
 
             if(!SignedOrientations)
             {
                 double[,] histograms = new double[(imgWidth/CellWidth)*(imgHeight/CellHeight),9];
 
-                for (int i = 0; i < imgWidth; i++)
+                for (int i = 0; i < imgHeight; i++)
                 {
-                    for (int j = 0; j < imgHeight; j++)
+                    for (int j = 0; j < imgWidth; j++)
                     {
-                        int cell = i / CellWidth + j / CellHeight * (imgWidth / CellWidth);
+                        int cell = j / CellWidth + i / CellHeight * (imgWidth / CellWidth);
                         if (cell >= histograms.GetLength(0)) continue;
                         int directionFirstIndex = (directions[i, j] / 20) % 9;
                         int directionSecondIndex = (directionFirstIndex+1) % 9;
@@ -121,6 +125,16 @@ namespace HOG
                         histograms[cell, directionFirstIndex] += directionFirstValue;
                         histograms[cell, directionSecondIndex] += directionSecondValue;
                     }
+                }
+                Console.WriteLine("Histograms:");
+
+                for(int i=0;i<histograms.GetLength(0);i++)
+                {
+                    for(int j=0;j<histograms.GetLength(1);j++)
+                    {
+                        Console.Write(histograms[i,j]+" ");
+                    }
+                    Console.WriteLine();
                 }
 
                 double[] finalVector = new double[((imgWidth / CellWidth)-BlockWidth+1)*((imgHeight / CellHeight)-_BlockHeight+1) * BlockWidth * BlockHeight * 9];
@@ -156,6 +170,24 @@ namespace HOG
 
             return ret;
         }
+
+        private int GetMaximalGradient(Color firstPixel, Color secondPixel)
+        {
+            int max = secondPixel.R - firstPixel.R;
+
+            if (Math.Abs(secondPixel.G - firstPixel.G) > Math.Abs(max)) max = secondPixel.G - firstPixel.G;
+            if (Math.Abs(secondPixel.B - firstPixel.B) > Math.Abs(max)) max = secondPixel.B - firstPixel.B;
+            return max;
+        }
+
+        //private int GetMaximalGradient(Color firstPixel, Color secondPixel)
+        //{
+        //    int max = Math.Abs(secondPixel.R - firstPixel.R);
+
+        //    if (Math.Abs(secondPixel.G - firstPixel.G) > max) max = Math.Abs(secondPixel.G - firstPixel.G);
+        //    if (Math.Abs(secondPixel.B - firstPixel.B) > max) max = Math.Abs(secondPixel.B - firstPixel.B);
+        //    return max;
+        //}
 
     }
 }
